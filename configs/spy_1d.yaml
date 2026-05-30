@@ -44,10 +44,13 @@ stochastic_ga:
   match_window: 5
   use_cross: false
 
-candle:
-  hammer_ratio: 2.0
-  upper_shadow_ratio: 1.0
-  use_gap_condition: false
+candle_ga:
+  population_size: 50
+  generations: 30
+  cx_prob: 0.7
+  mut_prob: 0.2
+  seed: 42
+  match_window: 5
 
 ma_bounds:
   n_min: 5
@@ -86,3 +89,19 @@ stochastic_bounds:
   lower_max: 40
   upper_min: 60
   upper_max: 90
+
+candle_bounds:
+  a_min: 1.0
+  a_max: 5.0
+  b_min: 0.0
+  b_max: 1.0
+  c_min: 0.0
+  c_max: 1.0
+  d_min: 0.0
+  d_max: 0.5
+  e_min: 0.0
+  e_max: 0.5
+  f_min: 0.0
+  f_max: 0.5
+  g_min: 0.0
+  g_max: 0.5

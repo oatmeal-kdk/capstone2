@@ -234,36 +234,81 @@ def plot_candle_patterns(
     output_path: str | Path,
     date_col: str = "Date",
     close_col: str = "Close",
-    hammer_col: str = "candle_hammer_hanging_man",
-    buy_signal_col: str = "candle_buy_signal",
-    sell_signal_col: str = "candle_sell_signal",
+    hammer_col: str = "candle_hammer_hanging_man_signal",
+    dark_cloud_col: str = "candle_dark_cloud_cover_signal",
+    piercing_col: str = "candle_piercing_line_signal",
+    bullish_engulfing_col: str = "candle_bullish_engulfing_signal",
+    bearish_engulfing_col: str = "candle_bearish_engulfing_signal",
 ) -> None:
-    """Plot Close price with aggregate candle buy and sell signals."""
+    """Plot Close price with independent candle pattern signals."""
 
-    required = [date_col, close_col, hammer_col, buy_signal_col, sell_signal_col]
+    required = [
+        date_col,
+        close_col,
+        hammer_col,
+        dark_cloud_col,
+        piercing_col,
+        bullish_engulfing_col,
+        bearish_engulfing_col,
+    ]
     missing = [col for col in required if col not in df.columns]
     if missing:
         raise ValueError(f"Missing columns for candle pattern plot: {missing}")
 
     dates = pd.to_datetime(df[date_col])
     close = pd.to_numeric(df[close_col], errors="coerce")
-    hammers = df[hammer_col] == 1
-    buys = df[buy_signal_col] == 1
-    sells = df[sell_signal_col] == 1
+    hammer_bull = df[hammer_col] == 1
+    hammer_bear = df[hammer_col] == -1
+    dark_cloud = df[dark_cloud_col] == -1
+    piercing = df[piercing_col] == 1
+    bullish_engulfing = df[bullish_engulfing_col] == 1
+    bearish_engulfing = df[bearish_engulfing_col] == -1
 
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.plot(dates, close, label="Close", linewidth=1.0)
     ax.scatter(
-        dates[hammers],
-        close[hammers],
+        dates[hammer_bull],
+        close[hammer_bull],
         marker="o",
         color="royalblue",
-        label="Hammer/Hanging Man",
+        label="Hammer",
         s=28,
         alpha=0.7,
     )
-    ax.scatter(dates[buys], close[buys], marker="^", color="green", label="Candle buy", s=35)
-    ax.scatter(dates[sells], close[sells], marker="v", color="red", label="Candle sell", s=35)
+    ax.scatter(
+        dates[hammer_bear],
+        close[hammer_bear],
+        marker="o",
+        color="darkorange",
+        label="Hanging Man",
+        s=28,
+        alpha=0.7,
+    )
+    ax.scatter(dates[piercing], close[piercing], marker="^", color="green", label="Piercing Line", s=35)
+    ax.scatter(
+        dates[bullish_engulfing],
+        close[bullish_engulfing],
+        marker="^",
+        color="limegreen",
+        label="Bullish Engulfing",
+        s=35,
+    )
+    ax.scatter(
+        dates[dark_cloud],
+        close[dark_cloud],
+        marker="v",
+        color="red",
+        label="Dark Cloud Cover",
+        s=35,
+    )
+    ax.scatter(
+        dates[bearish_engulfing],
+        close[bearish_engulfing],
+        marker="v",
+        color="darkred",
+        label="Bearish Engulfing",
+        s=35,
+    )
     ax.set_title("Candle Pattern Signals")
     ax.set_xlabel("Date")
     ax.set_ylabel("Close")
@@ -277,6 +322,80 @@ def plot_candle_patterns(
     plt.close(fig)
 
 
+def plot_individual_candle_patterns(
+    df: pd.DataFrame,
+    output_dir: str | Path,
+    date_col: str = "Date",
+    close_col: str = "Close",
+) -> None:
+    """Plot each candle pattern signal to its own PNG file."""
+
+    pattern_specs = [
+        (
+            "candle_hammer_hanging_man_signal",
+            "hammer_hanging_man.png",
+            "Hammer / Hanging Man",
+            [("Hammer", 1, "^", "green"), ("Hanging Man", -1, "v", "red")],
+        ),
+        (
+            "candle_dark_cloud_cover_signal",
+            "dark_cloud_cover.png",
+            "Dark Cloud Cover",
+            [("Dark Cloud Cover", -1, "v", "red")],
+        ),
+        (
+            "candle_piercing_line_signal",
+            "piercing_line.png",
+            "Piercing Line",
+            [("Piercing Line", 1, "^", "green")],
+        ),
+        (
+            "candle_bullish_engulfing_signal",
+            "bullish_engulfing.png",
+            "Bullish Engulfing",
+            [("Bullish Engulfing", 1, "^", "green")],
+        ),
+        (
+            "candle_bearish_engulfing_signal",
+            "bearish_engulfing.png",
+            "Bearish Engulfing",
+            [("Bearish Engulfing", -1, "v", "red")],
+        ),
+    ]
+
+    required = [date_col, close_col, *[spec[0] for spec in pattern_specs]]
+    missing = [col for col in required if col not in df.columns]
+    if missing:
+        raise ValueError(f"Missing columns for individual candle pattern plots: {missing}")
+
+    dates = pd.to_datetime(df[date_col])
+    close = pd.to_numeric(df[close_col], errors="coerce")
+    directory = Path(output_dir)
+    directory.mkdir(parents=True, exist_ok=True)
+
+    for signal_col, filename, title, markers in pattern_specs:
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.plot(dates, close, label="Close", linewidth=1.0)
+        for label, signal_value, marker, color in markers:
+            rows = df[signal_col] == signal_value
+            ax.scatter(
+                dates[rows],
+                close[rows],
+                marker=marker,
+                color=color,
+                label=label,
+                s=35,
+            )
+        ax.set_title(title)
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Close")
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        fig.tight_layout()
+        fig.savefig(directory / filename, dpi=150)
+        plt.close(fig)
+
+
 def plot_candle_pattern_counts(
     df: pd.DataFrame,
     output_path: str | Path,
@@ -288,7 +407,7 @@ def plot_candle_pattern_counts(
     if missing:
         raise ValueError(f"Missing columns for candle pattern counts: {missing}")
 
-    counts = df[pattern_cols].sum().sort_values(ascending=False)
+    counts = (df[pattern_cols] != 0).sum().sort_values(ascending=False)
     fig, ax = plt.subplots(figsize=(12, 6))
     counts.plot(kind="bar", ax=ax, color="steelblue")
     ax.set_title("Candle Pattern Counts")

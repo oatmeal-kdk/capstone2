@@ -179,6 +179,12 @@ def get_candle_patterns_figure_path(ticker: str, interval: str) -> Path:
     return get_figures_dir(ticker, interval) / "candle_patterns.png"
 
 
+def get_candle_pattern_figures_dir(ticker: str, interval: str) -> Path:
+    """Return directory for individual candle pattern figures."""
+
+    return get_figures_dir(ticker, interval) / "candle_patterns"
+
+
 def get_candle_pattern_counts_figure_path(ticker: str, interval: str) -> Path:
     """Return candle pattern counts figure path."""
 

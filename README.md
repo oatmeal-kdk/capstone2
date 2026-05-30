@@ -11,13 +11,16 @@ Current scope:
 - RSI is now implemented as a GA-optimized indicator.
 - ROC is now implemented as a GA-optimized indicator.
 - Stochastic Oscillator is now implemented as a GA-optimized indicator.
-- Candle patterns are implemented using only the patterns described in the paper:
+- Candle patterns are now implemented as a GA-optimized indicator using only the
+  patterns described in the paper:
   Hammer / Hanging Man, Dark Cloud Cover, Piercing Line, and Engulfing Pattern.
-- Each candle pattern is exported as an independent binary feature.
+- Each candle pattern is exported as an independent signed signal column.
 - Bullish and bearish engulfing are split to preserve signal direction.
 - Non-paper patterns such as doji, morning star, evening star, inverted hammer,
   and shooting star are not included in the default pipeline.
-- Aggregate `candle_buy_signal` and `candle_sell_signal` are also exported.
+- Aggregate `candle_buy_signal` and `candle_sell_signal` are not generated.
+- The ESN input signal set is fixed to 9 columns: MA, RSI, ROC, Stochastic, and
+  the five independent candle pattern signals.
 - ESN training remains future work.
 
 ## Setup
@@ -35,7 +38,7 @@ python -m src.pipeline.run_ma_ga --config configs/spy_1d.yaml
 python -m src.pipeline.run_rsi_ga --config configs/spy_1d.yaml
 python -m src.pipeline.run_roc_ga --config configs/spy_1d.yaml
 python -m src.pipeline.run_stochastic_ga --config configs/spy_1d.yaml
-python -m src.pipeline.run_candle_patterns --config configs/spy_1d.yaml
+python -m src.pipeline.run_candle_ga --config configs/spy_1d.yaml
 python -m src.pipeline.build_esn_dataset --config configs/spy_1d.yaml
 ```
 
@@ -55,6 +58,7 @@ python -m src.pipeline.build_esn_dataset --config configs/spy_1d.yaml
 - `outputs/indicator_params/SPY/1d/rsi_params.json`
 - `outputs/indicator_params/SPY/1d/roc_params.json`
 - `outputs/indicator_params/SPY/1d/stochastic_params.json`
+- `outputs/indicator_params/SPY/1d/candle_params.json`
 - `outputs/signals/SPY/1d/SPY_with_ma_signals.csv`
 - `outputs/signals/SPY/1d/SPY_with_rsi_signals.csv`
 - `outputs/signals/SPY/1d/SPY_with_roc_signals.csv`
@@ -91,8 +95,11 @@ print(stoch_df["stoch_buy_signal"].value_counts())
 print(stoch_df["stoch_sell_signal"].value_counts())
 
 candle_df = pd.read_csv("data/processed/SPY/1d/SPY_with_candle_patterns.csv")
-print(candle_df["candle_buy_signal"].value_counts())
-print(candle_df["candle_sell_signal"].value_counts())
+print(candle_df["candle_hammer_hanging_man_signal"].value_counts())
+print(candle_df["candle_dark_cloud_cover_signal"].value_counts())
+print(candle_df["candle_piercing_line_signal"].value_counts())
+print(candle_df["candle_bullish_engulfing_signal"].value_counts())
+print(candle_df["candle_bearish_engulfing_signal"].value_counts())
 ```
 
 ## Notes
@@ -110,13 +117,11 @@ CPM supports two selection styles:
 
 `pareto_knee` is intended to choose a balanced CPM parameter pair between too many
 noisy turning points from small P/T values and too few turning points from large
-P/T values. Once selected, the CPM labels are fixed for MA, RSI, ROC, and
-Stochastic GA optimization.
+P/T values. Once selected, the CPM labels are fixed for MA, RSI, ROC, Stochastic,
+and Candle GA optimization.
 
-`build_esn_dataset` currently combines implemented indicator features, including
-RSI, ROC, Stochastic, paper-defined candle pattern columns, and aggregate candle
-signals when those indicator pipelines have been run. Aggregate candle signals
-are rule-derived from same-row OHLC pattern detections and are included as
-candidate ESN features, not as ESN targets. Hammer / Hanging Man is exported as
-a shape feature but is not included in the aggregate buy/sell signals because
-its direction depends on trend context.
+`build_esn_dataset` materializes these 9 ESN input signal columns: `ma_signal`,
+`rsi_signal`, `roc_signal`, `stoch_signal`,
+`candle_hammer_hanging_man_signal`, `candle_dark_cloud_cover_signal`,
+`candle_piercing_line_signal`, `candle_bullish_engulfing_signal`, and
+`candle_bearish_engulfing_signal`.
